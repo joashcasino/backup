@@ -61,7 +61,9 @@ class ClaimTests(TestCase):
             self.client.force_login(user)
             response = self.client.get(self.url)
             self.assertEqual(response.status_code, 200)
-            response.close()
+            # Read the file through the test client, which closes it safely.
+            # Calling response.close() directly would also close the Postgres connection.
+            self.assertTrue(b"".join(response.streaming_content))
 
     def test_other_users_cannot_open_proof_photo(self):
         self.client.force_login(self.other)
