@@ -10,18 +10,29 @@
 <body class="bg-light">
   <nav class="navbar navbar-expand-md navbar-dark bg-dark">
     <div class="container">
-      <a class="navbar-brand" href="{% url 'listings:home' %}">MyFinder</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="nav">
-        <ul class="navbar-nav me-auto">
-          {% block nav_links %}{% endblock %}
-        </ul>
-        <span class="navbar-text">
-          {% if user.is_authenticated %}{{ user.email|default:user.username }}{% endif %}
-        </span>
-      </div>
+      {% if user.is_authenticated and user.is_sid %}
+        <a class="navbar-brand" href="{% url 'accounts:sid_dashboard' %}">MyFinder</a>
+      {% else %}
+        <a class="navbar-brand" href="{% url 'listings:home' %}">MyFinder</a>
+      {% endif %}
+      {% if user.is_authenticated %}
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"
+                aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="nav">
+          <ul class="navbar-nav me-auto">
+            {% block nav_links %}{% endblock %}
+          </ul>
+          <span class="navbar-text me-3">
+            {{ user.email|default:user.username }}{% if user.is_sid %} · SID staff{% endif %}
+          </span>
+          <form method="post" action="{% url 'account_logout' %}" class="d-flex">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-light btn-sm">Sign out</button>
+          </form>
+        </div>
+      {% endif %}
     </div>
   </nav>
 

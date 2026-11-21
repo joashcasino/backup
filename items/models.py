@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Item(models.Model):
@@ -51,6 +54,47 @@ class Item(models.Model):
 
     class Meta:
         ordering = ["-date_found", "-created_at"]
+
+    def __str__(self):
+        return f"{self.description} ({self.get_status_display()})"
+
+    @property
+    def surrender_deadline(self):
+        """Date the finder should surrender the item to SID by (shown on P05 / My items)."""
+        return self.created_at.date() + timedelta(days=settings.SURRENDER_DEADLINE_DAYS)
+
+    @property
+    def is_overdue(self):
+        """With finder past the surrender deadline (flagged on the SID dashboard)."""
+        return (
+            self.status == self.Status.WITH_FINDER
+            and timezone.localdate() > self.surrender_deadline
+        )
+
+
+class LostReport(models.Model):
+    """A lost item report from its owner (US-01). Shown in My items and SID Lost reports."""
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        FOUND = "found", "Found"
+        CLOSED = "closed", "Closed"
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="lost_reports",
+    )
+    description = models.CharField(max_length=255)
+    category = models.CharField(max_length=20, choices=Item.Category.choices, default=Item.Category.OTHER)
+    place_lost = models.CharField(max_length=255)
+    date_lost = models.DateField()
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    hidden_by_owner = models.BooleanField(default=False)  # "Remove from list" in My items
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-date_lost", "-created_at"]
 
     def __str__(self):
         return f"{self.description} ({self.get_status_display()})"

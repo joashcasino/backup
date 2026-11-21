@@ -7,6 +7,7 @@ from .models import User
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (("MyFinder", {"fields": ("role",)}),)
-    add_fieldsets = UserAdmin.add_fieldsets + (("MyFinder", {"fields": ("role",)}),)
+    add_fieldsets = UserAdmin.add_fieldsets + (("MyFinder", {"fields": ("email", "role")}),)
     list_display = ("username", "email", "role", "is_staff")
     list_filter = UserAdmin.list_filter + ("role",)
+    search_fields = ("username", "email", "first_name", "last_name")
