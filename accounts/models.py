@@ -7,6 +7,8 @@ class User(AbstractUser):
         MEMBER = "member", "Owner / Finder"
         SID = "sid", "SID staff"
 
+    # Google sign-in matches accounts by email, so each email can belong to one user only.
+    email = models.EmailField("email address", unique=True)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.MEMBER)
 
     @property

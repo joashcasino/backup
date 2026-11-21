@@ -8,6 +8,7 @@ venv/
 db.sqlite3
 staticfiles/
 media/
+private_media/
 
 # Secrets and local config
 .env

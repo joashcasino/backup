@@ -15,13 +15,10 @@ import os
 
 from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-load_dotenv(BASE_DIR / ".env")
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -47,6 +44,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Google sign-in (US-16)
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     # Project apps
     'accounts',
     'items',
@@ -62,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -133,6 +136,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # filled by `collectstatic` for deployment
+
+# Bootstrap alert colors for Django messages
+from django.contrib.messages import constants as message_constants  # noqa: E402
+
+MESSAGE_TAGS = {message_constants.ERROR: 'danger'}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -142,11 +151,74 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom user model (must be set before the first migrate)
 AUTH_USER_MODEL = 'accounts.User'
 
-# Login
-LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+# ---------------------------------------------------------------------------
+# Sign-in (US-16): Google accounts on the MSU-IIT domain only, via django-allauth
+# ---------------------------------------------------------------------------
+ALLOWED_EMAIL_DOMAIN = os.environ.get("ALLOWED_EMAIL_DOMAIN", "g.msuiit.edu.ph")
 
-# Uploaded photos (US-02, US-03a)
+AUTHENTICATION_BACKENDS = [
+    # Admin site login (superuser / SID staff with a password)
+    'django.contrib.auth.backends.ModelBackend',
+    # Google sign-in
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+LOGIN_URL = 'accounts:login'
+# After sign-in, send each user to the right home page for their role
+LOGIN_REDIRECT_URL = 'accounts:after_login'
+LOGOUT_REDIRECT_URL = 'accounts:login'
+
+ACCOUNT_ADAPTER = 'accounts.adapters.AccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'accounts.adapters.SocialAccountAdapter'
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*']
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_EMAIL_VERIFICATION = 'none'      # Google already verified the address
+ACCOUNT_LOGOUT_ON_GET = False            # sign out is a POST (CSRF-safe)
+SOCIALACCOUNT_AUTO_SIGNUP = True         # first Google sign-in creates the account
+SOCIALACCOUNT_LOGIN_ON_GET = False       # the sign-in button posts a form
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True               # match accounts by email, so
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True  # admin-made SID accounts can sign in
+SOCIALACCOUNT_STORE_TOKENS = False
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),
+            'secret': os.environ.get('GOOGLE_CLIENT_SECRET', ''),
+        },
+        'SCOPE': ['profile', 'email'],
+        # Hint for Google's account picker only. The real check is in
+        # accounts/adapters.py, because this hint can be bypassed.
+        'AUTH_PARAMS': {'hd': ALLOWED_EMAIL_DOMAIN, 'prompt': 'select_account'},
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Uploads
+# ---------------------------------------------------------------------------
+# Public photos: blurred found-item photos shown on listings (US-02, US-03a)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Private uploads: claim proof photos. Never served from MEDIA_URL; only the
+# claimant and SID staff can open them through claims:proof_photo (US-07).
+PRIVATE_MEDIA_ROOT = BASE_DIR / 'private_media'
+
+# ---------------------------------------------------------------------------
+# Email (claim status updates). Prints to the console unless SMTP is set up.
+# ---------------------------------------------------------------------------
+EMAIL_BACKEND = os.environ.get(
+    'DJANGO_EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend'
+)
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'MyFinder <no-reply@localhost>')
+
+# ---------------------------------------------------------------------------
+# Business rules (to be confirmed with SID; change here, not in code)
+# ---------------------------------------------------------------------------
+SURRENDER_DEADLINE_DAYS = 3   # finder must surrender a found item within this many days
+PICKUP_DEADLINE_DAYS = 7      # an approved claim expires if not picked up in time

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load socialaccount %}
+
+{% block title %}Sign in{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h1 class="h3 mb-2">Find what you lost.</h1>
+          <p class="text-muted">Lost and found for the MSU-IIT community.</p>
+
+          {% if error %}
+            <div class="alert alert-danger" role="alert">! {{ error }}</div>
+          {% endif %}
+
+          <form method="post" action="{% provider_login_url 'google' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-dark w-100 py-2">
+              Sign in with MSU-IIT Google account
+            </button>
+          </form>
+
+          <p class="small text-muted mt-3 mb-0">
+            Only @g.msuiit.edu.ph accounts may sign in.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

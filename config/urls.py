@@ -21,7 +21,10 @@ from django.urls import include, path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Our sign-in pages come first, so /accounts/login/ is the Google-only page
     path('accounts/', include('accounts.urls')),
+    # django-allauth: Google callback, sign out
+    path('accounts/', include('allauth.urls')),
     path('items/', include('items.urls')),
     path('claims/', include('claims.urls')),
     path('', include('listings.urls')),
