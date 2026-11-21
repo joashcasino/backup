@@ -27,6 +27,7 @@ urlpatterns = [
     path('', include('listings.urls')),
 ]
 
-# Serve uploaded photos during development only
+# Serve uploaded photos during development only.
+# Everything under /media/ is public: keep only blurred listing photos there (NFR-03).
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -19,9 +19,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -133,6 +130,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -148,5 +146,8 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 # Uploaded photos (US-02, US-03a)
+# PUBLIC: everything under MEDIA_ROOT can be opened by URL in development.
+# Store only blurred listing photos here. Proof photos and unblurred originals
+# must not go in media/ (NFR-03); they will be served by a permission-checked view.
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
